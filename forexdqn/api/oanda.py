@@ -12,11 +12,11 @@ import os
 from pathlib import Path
 
 # Option A: Load from current directory
-load_dotenv(dotenv_path='../../keys')
+load_dotenv(dotenv_path='.keys')
 
 # --- Config ---
 ACCESS_TOKEN = os.getenv('OANDA_DEMO_API')
-ACCOUNT_ID   = os.getenv('OANADA_TEST_ACCOUNT')
+ACCOUNT_ID   = os.getenv('OANDA_TEST_ACCOUNT')
 ENVIRONMENT  = "practice"              # "practice" or "live"
 
 # --- Client ---
