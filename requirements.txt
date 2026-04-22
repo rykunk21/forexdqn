@@ -1,0 +1,10 @@
+gymnasium
+stable-baselines3
+torch
+numpy
+pandas
+python-dotenv
+requests
+polygon-api-client
+plotly
+oandapyV20
