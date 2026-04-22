@@ -1,0 +1,22 @@
+{
+  "training": {
+    "total_timesteps": 100000,
+    "learning_rate": 0.0003,
+    "buffer_size": 50000,
+    "batch_size": 128,
+    "gamma": 0.99,
+    "exploration_fraction": 0.1
+  },
+  "environment": {
+    "window_size": 60,
+    "max_position_hold": 240,
+    "spread_pips": 1.2,
+    "initial_balance": 10000
+  },
+  "data": {
+    "train_start": "2024-04-01",
+    "train_end": "2025-01-01",
+    "val_start": "2025-01-01",
+    "val_end": "2025-04-01"
+  }
+}

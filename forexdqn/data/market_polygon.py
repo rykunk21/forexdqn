@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from datetime import datetime, date
 from typing import Optional, Union
-from polygon import ForexClient
+from polygon import RESTClient
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -33,7 +33,7 @@ class ForexData:
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.environ["POLYGON_API"]
-        self.client = ForexClient(self.api_key)
+        self.client = RESTClient(self.api_key)
 
     # ------------------------------------------------------------------
     # OHLCV Candles
@@ -57,19 +57,34 @@ class ForexData:
         """
         ticker = _to_polygon_ticker(pair)
 
-        bars = self.client.get_aggregate_bars(
-            symbol=ticker,
-            from_date=from_date,
-            to_date=to_date,
+        # Use get_aggs instead of get_aggregate_bars (newer API)
+        aggs = self.client.get_aggs(
+            ticker=ticker,
             multiplier=multiplier,
             timespan=timespan,
+            from_=from_date,
+            to=to_date,
+            adjusted=True,
             sort=sort,
-            full_range=True,   # auto-paginates across the full date range
-            warnings=False,
+            limit=50000,
         )
 
-        if not bars:
+        if not aggs:
             return pd.DataFrame()
+
+        # Convert Agg objects to dicts
+        bars = []
+        for agg in aggs:
+            bars.append({
+                'o': agg.open,
+                'h': agg.high,
+                'l': agg.low,
+                'c': agg.close,
+                'v': agg.volume,
+                'vw': getattr(agg, 'vwap', None),
+                't': agg.timestamp,
+                'n': getattr(agg, 'transactions', None),
+            })
 
         df = pd.DataFrame(bars)
         df = df.rename(columns={
