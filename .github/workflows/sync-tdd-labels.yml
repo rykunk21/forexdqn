@@ -1,0 +1,74 @@
+name: Sync TDD label to project board
+
+on:
+  issues:
+    types: [labeled, unlabeled, opened, closed, reopened]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set project status from label
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+        run: |
+          ISSUE_URL="${{ github.event.issue.html_url }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          ISSUE_STATE="${{ github.event.issue.state }}"
+          PROJECT_NUMBER="15"
+          OWNER="rykunk21"
+
+          # Hardcoded field and option IDs from project #15
+          FIELD_ID="PVTSSF_lAHOBEWM6M4BS__IzhAXsr4"
+          OPT_BACKLOG="f3f86809"
+          OPT_RED="97951389"
+          OPT_GREEN="aa92bbf7"
+          OPT_REFACTOR="f22861ed"
+          OPT_DONE="7f2486c5"
+
+          # Determine target status from labels
+          LABELS=$(gh issue view "$ISSUE_NUMBER" --repo "${{ github.repository }}" --json labels -q '[.labels[].name] | join(" ")')
+          echo "Issue #$ISSUE_NUMBER labels: $LABELS"
+          echo "Issue state: $ISSUE_STATE"
+
+          if [ "$ISSUE_STATE" = "closed" ]; then
+            STATUS_ID="$OPT_DONE"
+            STATUS_NAME="Done"
+          elif echo "$LABELS" | grep -q "refactor"; then
+            STATUS_ID="$OPT_REFACTOR"
+            STATUS_NAME="Refactor"
+          elif echo "$LABELS" | grep -q "green"; then
+            STATUS_ID="$OPT_GREEN"
+            STATUS_NAME="Green"
+          elif echo "$LABELS" | grep -q "red"; then
+            STATUS_ID="$OPT_RED"
+            STATUS_NAME="Red"
+          else
+            STATUS_ID="$OPT_BACKLOG"
+            STATUS_NAME="Backlog"
+          fi
+
+          echo "Target status: $STATUS_NAME"
+
+          # Add issue to project if not already there (safe to run repeatedly)
+          gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$ISSUE_URL"
+
+          # Get the project item ID for this issue
+          ITEM_ID=$(gh project item-list "$PROJECT_NUMBER" --owner "$OWNER" --format json \
+            | jq -r ".items[] | select(.content.number == $ISSUE_NUMBER) | .id")
+
+          if [ -z "$ITEM_ID" ]; then
+            echo "Could not find project item for issue #$ISSUE_NUMBER"
+            exit 1
+          fi
+
+          echo "Project item ID: $ITEM_ID"
+
+          # Update the status field
+          gh project item-edit \
+            --project-id "PVT_kwHOBEWM6M4BS__I" \
+            --id "$ITEM_ID" \
+            --field-id "$FIELD_ID" \
+            --single-select-option-id "$STATUS_ID"
+
+          echo "Done! Issue #$ISSUE_NUMBER moved to $STATUS_NAME"
